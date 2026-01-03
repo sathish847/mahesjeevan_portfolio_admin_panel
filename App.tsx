@@ -3,14 +3,17 @@ import { PropsWithChildren, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import { toggleRTL, toggleTheme, toggleMenu, toggleLayout, toggleAnimation, toggleNavbar, toggleSemidark } from '@/store/themeConfigSlice';
+import { setUser } from '@/store/authSlice';
 import Loading from '@/components/layouts/loading';
 import { getTranslation } from '@/i18n';
+import { useSession } from 'next-auth/react';
 
 function App({ children }: PropsWithChildren) {
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
     const dispatch = useDispatch();
     const { initLocale } = getTranslation();
     const [isLoading, setIsLoading] = useState(true);
+    const { data: session } = useSession();
 
     useEffect(() => {
         dispatch(toggleTheme(localStorage.getItem('theme') || themeConfig.theme));
@@ -25,6 +28,14 @@ function App({ children }: PropsWithChildren) {
 
         setIsLoading(false);
     }, [dispatch, initLocale, themeConfig.theme, themeConfig.menu, themeConfig.layout, themeConfig.rtlClass, themeConfig.animation, themeConfig.navbar, themeConfig.locale, themeConfig.semidark]);
+
+    useEffect(() => {
+        if (session?.user) {
+            dispatch(setUser(session.user as any));
+        } else {
+            dispatch(setUser(null));
+        }
+    }, [session, dispatch]);
 
     return (
         <div

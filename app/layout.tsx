@@ -6,8 +6,8 @@ import { Nunito } from 'next/font/google';
 
 export const metadata: Metadata = {
     title: {
-        template: '%s | VRISTO - Multipurpose Tailwind Dashboard Template',
-        default: 'VRISTO - Multipurpose Tailwind Dashboard Template',
+        template: '%s | Mahesjeevan Portfolio',
+        default: 'Mahesjeevan Portfolio',
     },
 };
 const nunito = Nunito({
@@ -20,6 +20,9 @@ const nunito = Nunito({
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en">
+            <head>
+                <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+            </head>
             <body className={nunito.variable}>
                 <ProviderComponent>{children}</ProviderComponent>
             </body>

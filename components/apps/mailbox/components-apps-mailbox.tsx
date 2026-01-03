@@ -47,7 +47,6 @@ import { useSelector } from 'react-redux';
 import Swal from 'sweetalert2';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 import 'tippy.js/dist/tippy.css';
-import 'react-quill/dist/quill.snow.css';
 
 const ComponentsAppsMailbox = () => {
     const [mailList, setMailList] = useState([
@@ -1060,7 +1059,7 @@ const ComponentsAppsMailbox = () => {
                 (d.title && d.title.toLowerCase().includes(searchText)) ||
                 (d.firstName && d.firstName.toLowerCase().includes(searchText)) ||
                 (d.lastName && d.lastName.toLowerCase().includes(searchText)) ||
-                (d.displayDescription && d.displayDescription.toLowerCase().includes(searchText))
+                (d.displayDescription && d.displayDescription.toLowerCase().includes(searchText)),
         );
 
         setFilteredMailList([
@@ -1069,7 +1068,7 @@ const ComponentsAppsMailbox = () => {
                     (d.title && d.title.toLowerCase().includes(searchText)) ||
                     (d.firstName && d.firstName.toLowerCase().includes(searchText)) ||
                     (d.lastName && d.lastName.toLowerCase().includes(searchText)) ||
-                    (d.displayDescription && d.displayDescription.toLowerCase().includes(searchText))
+                    (d.displayDescription && d.displayDescription.toLowerCase().includes(searchText)),
             ),
         ]);
 

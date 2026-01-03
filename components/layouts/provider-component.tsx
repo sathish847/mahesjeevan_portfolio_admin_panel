@@ -6,6 +6,7 @@ import React, { ReactNode, Suspense } from 'react';
 import { appWithI18Next } from 'ni18n';
 import { ni18nConfig } from 'ni18n.config.ts';
 import Loading from '@/components/layouts/loading';
+import { SessionProvider } from 'next-auth/react';
 
 interface IProps {
     children?: ReactNode;
@@ -14,9 +15,11 @@ interface IProps {
 const ProviderComponent = ({ children }: IProps) => {
     return (
         <Provider store={store}>
-            <Suspense fallback={<Loading />}>
-                <App>{children} </App>
-            </Suspense>
+            <SessionProvider>
+                <Suspense fallback={<Loading />}>
+                    <App>{children} </App>
+                </Suspense>
+            </SessionProvider>
         </Provider>
     );
 };

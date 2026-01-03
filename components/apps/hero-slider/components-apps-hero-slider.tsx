@@ -1,0 +1,458 @@
+'use client';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import IconPlus from '@/components/icon/icon-plus';
+import IconSearch from '@/components/icon/icon-search';
+import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
+import IconEye from '@/components/icon/icon-eye';
+import IconEdit from '@/components/icon/icon-edit';
+import IconTrash from '@/components/icon/icon-trash';
+import IconX from '@/components/icon/icon-x';
+import Dropdown from '@/components/dropdown';
+import { Transition, Dialog, DialogPanel, TransitionChild } from '@headlessui/react';
+import { Fragment } from 'react';
+import { IRootState } from '@/store';
+import { useSelector } from 'react-redux';
+
+interface HeroSlider {
+    _id: string;
+    type: 'image' | 'video';
+    videoUrl?: string;
+    desktopImage?: string;
+    mobileImage?: string;
+    title: string;
+    subtitle: string;
+    buttonText?: string;
+    buttonLink?: string;
+    status: 'active' | 'inactive';
+    order: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+const ComponentsAppsHeroSlider = () => {
+    const { data: session } = useSession();
+    const router = useRouter();
+    const [searchSlider, setSearchSlider] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [heroSliders, setHeroSliders] = useState<HeroSlider[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [viewModalOpen, setViewModalOpen] = useState(false);
+    const [selectedSlider, setSelectedSlider] = useState<HeroSlider | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
+
+    // Fetch hero sliders from API
+    useEffect(() => {
+        const fetchHeroSliders = async () => {
+            if (!session?.accessToken) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKENDURL}/api/hero-sliders/admin/all`, {
+                    headers: {
+                        Authorization: `Bearer ${session.accessToken}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch hero sliders');
+                }
+
+                const data = await response.json();
+                setHeroSliders(data.heroSliders || []);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to fetch hero sliders');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHeroSliders();
+    }, [session?.accessToken]);
+
+    // Filter hero sliders by search and status
+    const filteredSliders = heroSliders.filter((slider) => {
+        const matchesSearch = slider.title.toLowerCase().includes(searchSlider.toLowerCase()) || slider.subtitle.toLowerCase().includes(searchSlider.toLowerCase());
+
+        const matchesStatus = statusFilter === 'all' || slider.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+    });
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredSliders.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentSliders = filteredSliders.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchSlider, statusFilter]);
+
+    const handleNewSlider = () => {
+        router.push('/apps/hero-slider/create');
+    };
+
+    const handleViewSlider = (slider: HeroSlider) => {
+        setSelectedSlider(slider);
+        setViewModalOpen(true);
+    };
+
+    const handleEditSlider = (sliderId: string) => {
+        router.push(`/apps/hero-slider/edit/${sliderId}`);
+    };
+
+    const handleDeleteSlider = async (sliderId: string) => {
+        if (!confirm('Are you sure you want to delete this hero slider? This action cannot be undone.')) {
+            return;
+        }
+
+        if (!session?.accessToken) {
+            alert('You must be logged in to delete a hero slider');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKENDURL}/api/hero-sliders/${sliderId}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${session.accessToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete hero slider');
+            }
+
+            // Refresh the hero sliders list
+            const fetchHeroSliders = async () => {
+                try {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKENDURL}/api/hero-sliders/admin/all`, {
+                        headers: {
+                            Authorization: `Bearer ${session.accessToken}`,
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch hero sliders');
+                    }
+
+                    const data = await response.json();
+                    setHeroSliders(data.heroSliders || []);
+                } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Failed to fetch hero sliders');
+                }
+            };
+
+            await fetchHeroSliders();
+            alert('Hero slider deleted successfully!');
+        } catch (error) {
+            console.error('Error deleting hero slider:', error);
+            alert('Failed to delete hero slider. Please try again.');
+        }
+    };
+
+    return (
+        <div>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                    <span className="material-icons text-primary text-2xl">view_carousel</span>
+                    <h2 className="text-xl font-semibold ltr:ml-3 rtl:mr-3">Hero Slider</h2>
+                </div>
+                <button className="btn btn-primary" onClick={handleNewSlider}>
+                    <IconPlus className="h-4 w-4 shrink-0 ltr:mr-2 rtl:ml-2" />
+                    New Hero Slider
+                </button>
+            </div>
+
+            <div className="mt-6">
+                <div className="mb-4 flex flex-col sm:flex-row gap-4">
+                    <div className="relative flex-1">
+                        <input type="text" className="form-input ltr:!pr-10 rtl:!pl-10" placeholder="Search hero sliders..." value={searchSlider} onChange={(e) => setSearchSlider(e.target.value)} />
+                        <div className="absolute top-1/2 -translate-y-1/2 peer-focus:text-primary ltr:right-[11px] rtl:left-[11px]">
+                            <IconSearch />
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium">Status:</label>
+                        <select className="form-select w-32" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                            <option value="all">All</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                {loading ? (
+                    <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                        <p className="mt-4 text-gray-500">Loading hero sliders...</p>
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-8">
+                        <span className="material-icons mx-auto text-6xl text-red-400">error</span>
+                        <h3 className="mt-4 text-lg font-medium text-red-600">Error loading hero sliders</h3>
+                        <p className="mt-2 text-gray-500">{error}</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="grid gap-4">
+                            {currentSliders.map((slider) => (
+                                <div key={slider._id} className="panel">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <h3 className="text-lg font-semibold text-primary">{slider.title}</h3>
+                                                <span className={`badge ${slider.status === 'active' ? 'badge-outline-success' : 'badge-outline-danger'}`}>{slider.status}</span>
+                                                <span className={`badge ${slider.type === 'video' ? 'badge-outline-primary' : 'badge-outline-secondary'}`}>{slider.type}</span>
+                                            </div>
+                                            <p className="text-gray-600 dark:text-gray-400 mb-3">{slider.subtitle}</p>
+                                            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                                                <span>Order: {slider.order}</span>
+                                                <span>{new Date(slider.createdAt).toLocaleDateString()}</span>
+                                            </div>
+                                            {slider.type === 'image' && slider.desktopImage && (
+                                                <div className="mt-3">
+                                                    <img src={slider.desktopImage} alt={slider.title} className="w-32 h-20 object-cover rounded" />
+                                                </div>
+                                            )}
+                                            {slider.type === 'video' && slider.videoUrl && (
+                                                <div className="mt-3">
+                                                    <video className="w-32 h-20 object-cover rounded">
+                                                        <source src={slider.videoUrl} type="video/mp4" />
+                                                    </video>
+                                                    <span className="text-xs text-gray-500 mt-1 block">Video</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="dropdown">
+                                            <Dropdown
+                                                offset={[0, 5]}
+                                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
+                                                btnClassName="align-middle"
+                                                button={<IconHorizontalDots className="rotate-90 opacity-70" />}
+                                            >
+                                                <ul className="whitespace-nowrap">
+                                                    <li>
+                                                        <button type="button" onClick={() => handleViewSlider(slider)}>
+                                                            <IconEye className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                                            View
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button type="button" onClick={() => handleEditSlider(slider._id)}>
+                                                            <IconEdit className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                                            Edit
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button type="button" className="text-danger" onClick={() => handleDeleteSlider(slider._id)}>
+                                                            <IconTrash className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                                            Delete
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </Dropdown>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="mt-6 flex items-center justify-between">
+                                <div className="text-sm text-gray-500">
+                                    Showing {startIndex + 1} to {Math.min(endIndex, filteredSliders.length)} of {filteredSliders.length} hero sliders
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="btn btn-outline-secondary">
+                                        Previous
+                                    </button>
+
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                            const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                                            if (pageNum > totalPages) return null;
+
+                                            return (
+                                                <button
+                                                    key={pageNum}
+                                                    onClick={() => setCurrentPage(pageNum)}
+                                                    className={`btn ${currentPage === pageNum ? 'btn-primary' : 'btn-outline-secondary'} w-10 h-10 p-0`}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="btn btn-outline-secondary">
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {filteredSliders.length === 0 && !loading && (
+                    <div className="text-center py-8">
+                        <span className="material-icons mx-auto text-6xl text-gray-400">view_carousel</span>
+                        <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No hero sliders found</h3>
+                        <p className="mt-2 text-gray-500 dark:text-gray-400">Try adjusting your search terms or status filter.</p>
+                    </div>
+                )}
+            </div>
+
+            {/* View Hero Slider Modal */}
+            <Transition appear show={viewModalOpen} as={Fragment}>
+                <Dialog as="div" open={viewModalOpen} onClose={() => setViewModalOpen(false)}>
+                    <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                        <div className="fixed inset-0" />
+                    </TransitionChild>
+                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
+                        <div className="flex min-h-screen items-start justify-center px-4">
+                            <TransitionChild
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <DialogPanel as="div" className="panel my-8 w-full max-w-4xl overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                    <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                                        <div className="text-lg font-bold">Hero Slider Details</div>
+                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setViewModalOpen(false)}>
+                                            <IconX />
+                                        </button>
+                                    </div>
+                                    <div className="p-5">
+                                        {selectedSlider && (
+                                            <div className="space-y-6">
+                                                {/* Header */}
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <h1 className="text-2xl font-bold text-primary mb-2">{selectedSlider.title}</h1>
+                                                        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                                            <span className={`badge ${selectedSlider.status === 'active' ? 'badge-outline-success' : 'badge-outline-danger'}`}>
+                                                                {selectedSlider.status}
+                                                            </span>
+                                                            <span className={`badge ${selectedSlider.type === 'video' ? 'badge-outline-primary' : 'badge-outline-secondary'}`}>
+                                                                {selectedSlider.type}
+                                                            </span>
+                                                            <span>Order: {selectedSlider.order}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Media Preview */}
+                                                <div>
+                                                    <h3 className="text-lg font-semibold mb-2">Media Preview</h3>
+                                                    {selectedSlider.type === 'image' && (
+                                                        <div className="space-y-4">
+                                                            {/* Desktop Image */}
+                                                            {selectedSlider.desktopImage && (
+                                                                <div>
+                                                                    <h4 className="text-md font-medium mb-2 text-gray-700 dark:text-gray-300">Desktop Image</h4>
+                                                                    <img
+                                                                        src={selectedSlider.desktopImage}
+                                                                        alt={`${selectedSlider.title} - Desktop`}
+                                                                        className="w-full max-h-96 object-cover rounded-lg"
+                                                                    />
+                                                                </div>
+                                                            )}
+
+                                                            {/* Mobile Image */}
+                                                            {selectedSlider.mobileImage && (
+                                                                <div>
+                                                                    <h4 className="text-md font-medium mb-2 text-gray-700 dark:text-gray-300">Mobile Image</h4>
+                                                                    <img
+                                                                        src={selectedSlider.mobileImage}
+                                                                        alt={`${selectedSlider.title} - Mobile`}
+                                                                        className="w-full max-h-96 object-cover rounded-lg"
+                                                                    />
+                                                                </div>
+                                                            )}
+
+                                                            {/* No images message */}
+                                                            {!selectedSlider.desktopImage && !selectedSlider.mobileImage && <p className="text-gray-500 dark:text-gray-400">No images available</p>}
+                                                        </div>
+                                                    )}
+                                                    {selectedSlider.type === 'video' && selectedSlider.videoUrl && (
+                                                        <video controls className="w-full max-h-96 rounded-lg">
+                                                            <source src={selectedSlider.videoUrl} type="video/mp4" />
+                                                            Your browser does not support the video tag.
+                                                        </video>
+                                                    )}
+                                                </div>
+
+                                                {/* Subtitle */}
+                                                <div>
+                                                    <h3 className="text-lg font-semibold mb-2">Subtitle</h3>
+                                                    <p className="text-gray-700 dark:text-gray-300">{selectedSlider.subtitle}</p>
+                                                </div>
+
+                                                {/* Button Configuration */}
+                                                {(selectedSlider.buttonText || selectedSlider.buttonLink) && (
+                                                    <div>
+                                                        <h3 className="text-lg font-semibold mb-2">Button Configuration</h3>
+                                                        <div className="space-y-2">
+                                                            {selectedSlider.buttonText && (
+                                                                <p>
+                                                                    <strong>Button Text:</strong> {selectedSlider.buttonText}
+                                                                </p>
+                                                            )}
+                                                            {selectedSlider.buttonLink && (
+                                                                <p>
+                                                                    <strong>Button Link:</strong>{' '}
+                                                                    <a href={selectedSlider.buttonLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                                                        {selectedSlider.buttonLink}
+                                                                    </a>
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Timestamps */}
+                                                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500">
+                                                        <div>
+                                                            <span className="font-medium">Created:</span> {new Date(selectedSlider.createdAt).toLocaleString()}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-medium">Updated:</span> {new Date(selectedSlider.updatedAt).toLocaleString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="mt-8 flex items-center justify-end">
+                                            <button type="button" className="btn btn-primary" onClick={() => setViewModalOpen(false)}>
+                                                Close
+                                            </button>
+                                        </div>
+                                    </div>
+                                </DialogPanel>
+                            </TransitionChild>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
+        </div>
+    );
+};
+
+export default ComponentsAppsHeroSlider;
