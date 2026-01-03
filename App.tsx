@@ -16,13 +16,15 @@ function App({ children }: PropsWithChildren) {
     const { data: session } = useSession();
 
     useEffect(() => {
-        dispatch(toggleTheme(localStorage.getItem('theme') || themeConfig.theme));
-        dispatch(toggleMenu(localStorage.getItem('menu') || themeConfig.menu));
-        dispatch(toggleLayout(localStorage.getItem('layout') || themeConfig.layout));
-        dispatch(toggleRTL(localStorage.getItem('rtlClass') || themeConfig.rtlClass));
-        dispatch(toggleAnimation(localStorage.getItem('animation') || themeConfig.animation));
-        dispatch(toggleNavbar(localStorage.getItem('navbar') || themeConfig.navbar));
-        dispatch(toggleSemidark(localStorage.getItem('semidark') || themeConfig.semidark));
+        if (typeof window !== 'undefined') {
+            dispatch(toggleTheme(localStorage.getItem('theme') || themeConfig.theme));
+            dispatch(toggleMenu(localStorage.getItem('menu') || themeConfig.menu));
+            dispatch(toggleLayout(localStorage.getItem('layout') || themeConfig.layout));
+            dispatch(toggleRTL(localStorage.getItem('rtlClass') || themeConfig.rtlClass));
+            dispatch(toggleAnimation(localStorage.getItem('animation') || themeConfig.animation));
+            dispatch(toggleNavbar(localStorage.getItem('navbar') || themeConfig.navbar));
+            dispatch(toggleSemidark(localStorage.getItem('semidark') || themeConfig.semidark));
+        }
         // locale
         initLocale(themeConfig.locale);
 
