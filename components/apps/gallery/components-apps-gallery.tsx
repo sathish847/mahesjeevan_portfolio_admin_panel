@@ -55,6 +55,26 @@ const ComponentsAppsGallery = () => {
         return url;
     };
 
+    // Helper function to check if URL is YouTube
+    const isYouTubeUrl = (url: string): boolean => {
+        return /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/.test(url);
+    };
+
+    // Helper function to check if URL is Instagram
+    const isInstagramUrl = (url: string): boolean => {
+        return /^https?:\/\/(www\.)?instagram\.com\/(p\/|reel\/|tv\/)/.test(url);
+    };
+
+    // Helper function to get Instagram embed URL
+    const getInstagramEmbedUrl = (url: string): string => {
+        // Convert Instagram URL to embed format
+        const match = url.match(/instagram\.com\/(p|reel|tv)\/([^\/\?]+)/);
+        if (match) {
+            return `https://www.instagram.com/${match[1]}/${match[2]}/embed`;
+        }
+        return url;
+    };
+
     // Fetch gallery items from API
     useEffect(() => {
         const fetchGalleryItems = async () => {
@@ -230,7 +250,7 @@ const ComponentsAppsGallery = () => {
                                             </div>
                                             <p className="text-gray-600 dark:text-gray-400 mb-3">{item.description}</p>
                                             <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                                                <span>YouTube URL: {item.youtubeUrl}</span>
+                                                <span>Media URL: {item.youtubeUrl}</span>
                                                 <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                                             </div>
                                         </div>
@@ -355,17 +375,30 @@ const ComponentsAppsGallery = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* YouTube Video Embed */}
+                                                {/* Media Embed */}
                                                 {selectedGalleryItem.youtubeUrl && (
                                                     <div className="mb-6">
-                                                        <h3 className="text-lg font-semibold mb-2">Video</h3>
+                                                        <h3 className="text-lg font-semibold mb-2">Media</h3>
                                                         <div className="aspect-video">
-                                                            <iframe
-                                                                src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedGalleryItem.youtubeUrl)}`}
-                                                                title={selectedGalleryItem.title}
-                                                                className="w-full h-full rounded-lg"
-                                                                allowFullScreen
-                                                            ></iframe>
+                                                            {isYouTubeUrl(selectedGalleryItem.youtubeUrl) ? (
+                                                                <iframe
+                                                                    src={`https://www.youtube.com/embed/${getYouTubeVideoId(selectedGalleryItem.youtubeUrl)}`}
+                                                                    title={selectedGalleryItem.title}
+                                                                    className="w-full h-full rounded-lg"
+                                                                    allowFullScreen
+                                                                ></iframe>
+                                                            ) : isInstagramUrl(selectedGalleryItem.youtubeUrl) ? (
+                                                                <iframe
+                                                                    src={getInstagramEmbedUrl(selectedGalleryItem.youtubeUrl)}
+                                                                    title={selectedGalleryItem.title}
+                                                                    className="w-full h-full rounded-lg"
+                                                                    allowFullScreen
+                                                                ></iframe>
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                                                    <p className="text-gray-500">Unsupported media format</p>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}
@@ -376,9 +409,9 @@ const ComponentsAppsGallery = () => {
                                                     <p className="text-gray-700 dark:text-gray-300">{selectedGalleryItem.description}</p>
                                                 </div>
 
-                                                {/* YouTube URL */}
+                                                {/* Media URL */}
                                                 <div>
-                                                    <h3 className="text-lg font-semibold mb-2">YouTube URL</h3>
+                                                    <h3 className="text-lg font-semibold mb-2">Media URL</h3>
                                                     <a href={selectedGalleryItem.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                                                         {selectedGalleryItem.youtubeUrl}
                                                     </a>

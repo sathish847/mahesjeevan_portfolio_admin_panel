@@ -53,7 +53,7 @@ const ComponentsAppsGalleryCreate = () => {
         }
 
         if (!formData.youtubeUrl || !formData.youtubeUrl.trim()) {
-            newErrors.youtubeUrl = 'YouTube URL is required';
+            newErrors.youtubeUrl = 'YouTube URL or Instagram link is required';
         }
 
         // Additional validations
@@ -65,8 +65,16 @@ const ComponentsAppsGalleryCreate = () => {
             newErrors.description = 'Description must be at least 10 characters long';
         }
 
-        if (formData.youtubeUrl && !formData.youtubeUrl.match(/^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)/)) {
-            newErrors.youtubeUrl = 'Please enter a valid YouTube URL';
+        if (
+            formData.youtubeUrl &&
+            !(
+                formData.youtubeUrl.match(/^https?:\/\/(www\.)?youtube\.com\/watch\?v=/) ||
+                formData.youtubeUrl.match(/^https?:\/\/(www\.)?youtu\.be\//) ||
+                formData.youtubeUrl.match(/^https?:\/\/(www\.)?youtube\.com\/embed\//) ||
+                formData.youtubeUrl.match(/^https?:\/\/(www\.)?instagram\.com\/(p\/|reel\/|tv\/)[^\/\?]+/)
+            )
+        ) {
+            newErrors.youtubeUrl = 'Please provide a valid YouTube URL or Instagram link';
         }
 
         setErrors(newErrors);
@@ -139,17 +147,17 @@ const ComponentsAppsGalleryCreate = () => {
 
                 {/* YouTube URL */}
                 <div>
-                    <label className="block text-sm font-medium mb-2">YouTube URL *</label>
+                    <label className="block text-sm font-medium mb-2">YouTube URL or Instagram Link *</label>
                     <input
                         name="youtubeUrl"
                         type="url"
                         className="form-input"
-                        placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
+                        placeholder="https://www.youtube.com/watch?v=VIDEO_ID or https://instagram.com/p/POST_ID"
                         value={formData.youtubeUrl}
                         onChange={handleInputChange}
                         required
                     />
-                    <p className="text-gray-500 text-sm mt-1">Enter a valid YouTube video URL</p>
+                    <p className="text-gray-500 text-sm mt-1">Enter a valid YouTube URL or Instagram link</p>
                     {errors.youtubeUrl && <p className="text-red-500 text-sm mt-1">{errors.youtubeUrl}</p>}
                 </div>
 
