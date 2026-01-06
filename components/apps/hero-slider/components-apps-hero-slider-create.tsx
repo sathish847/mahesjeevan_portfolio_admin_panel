@@ -57,6 +57,14 @@ const ComponentsAppsHeroSliderCreate = () => {
     const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Check file size (100MB limit)
+            const maxSize = 100 * 1024 * 1024; // 100MB in bytes
+            if (file.size > maxSize) {
+                alert('Video file size must be less than 100MB');
+                e.target.value = ''; // Clear the input
+                return;
+            }
+
             setVideoFile(file);
             const url = URL.createObjectURL(file);
             setVideoPreview(url);
@@ -309,6 +317,7 @@ const ComponentsAppsHeroSliderCreate = () => {
                                 </video>
                             </div>
                         )}
+                        <p className="text-gray-500 text-sm mt-1">Maximum file size: 100MB</p>
                     </div>
                 )}
 
