@@ -26,14 +26,17 @@ const ComponentsAuthLoginForm = () => {
             const result = await signIn('credentials', {
                 email: data.email,
                 password: data.password,
-                redirect: true,
-                callbackUrl: '/',
+                redirect: false,
             });
 
             if (result?.error) {
                 setError('Invalid credentials');
+            } else if (result?.ok) {
+                // Wait a moment for session to be established
+                setTimeout(() => {
+                    router.push('/');
+                }, 100);
             }
-            // NextAuth will handle the redirect automatically
         } catch (err) {
             setError('An error occurred');
         }
